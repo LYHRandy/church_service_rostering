@@ -1,0 +1,15 @@
+{
+  "name": "church-duty-management",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "supabase": "supabase",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@supabase/supabase-js": "^2.49.0",
+    "grammy": "^1.30.0",
+    "supabase": "^2.0.0",
+    "vitest": "^4.1.10"
+  }
+}
