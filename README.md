@@ -38,7 +38,7 @@ Local bot testing without a real bot: `supabase/.env.local` ships a fake token p
 3. **Vault** (SQL editor, once): create secrets `project_functions_url` = `https://<ref>.supabase.co/functions/v1` and `project_service_role_key` = the service-role key, so the pg_cron drain job can call the send function.
 4. **Webhook**: `https://api.telegram.org/bot<TOKEN>/setWebhook?url=https://<ref>.supabase.co/functions/v1/telegram-bot&secret_token=<TELEGRAM_WEBHOOK_SECRET>`.
 5. **Web**: deploy `web/` to Vercel with `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `NEXT_PUBLIC_FUNCTIONS_URL`, `NEXT_PUBLIC_TELEGRAM_BOT_USERNAME`.
-6. **Bootstrap data**: insert the first pastor row (`insert into users (name, global_role) values ('…', 'pastor')`), link their Telegram with an invite token, then everything else happens in the dashboard.
+6. **Bootstrap data**: insert the first global-admin row (`insert into users (name, global_role) values ('…', 'admin')` — or `'pastor'`; the two are permission-equivalent), link their Telegram with an invite token, then everything else happens in the dashboard.
 
 For local end-to-end bot testing with a real dev bot: put its token in `supabase/.env.local` (remove `TELEGRAM_BOT_INFO`), expose port 54321 with a tunnel (e.g. `cloudflared tunnel --url http://localhost:54321`), and point the dev bot's webhook + login domain at the tunnel URL.
 

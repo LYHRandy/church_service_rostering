@@ -20,7 +20,12 @@ insert into auth.users (instance_id, id, aud, role, email) values
   ('00000000-0000-0000-0000-000000000000', '90000000-0000-4000-8000-000000000003', 'authenticated', 'authenticated', 'marcus@test.local'),
   ('00000000-0000-0000-0000-000000000000', '90000000-0000-4000-8000-000000000004', 'authenticated', 'authenticated', 'lydia@test.local'),
   ('00000000-0000-0000-0000-000000000000', '90000000-0000-4000-8000-000000000005', 'authenticated', 'authenticated', 'joel@test.local'),
-  ('00000000-0000-0000-0000-000000000000', '90000000-0000-4000-8000-000000000006', 'authenticated', 'authenticated', 'priya@test.local');
+  ('00000000-0000-0000-0000-000000000000', '90000000-0000-4000-8000-000000000006', 'authenticated', 'authenticated', 'priya@test.local'),
+  ('00000000-0000-0000-0000-000000000000', '90000000-0000-4000-8000-000000000009', 'authenticated', 'authenticated', 'admin@test.local');
+
+-- Non-clergy system administrator (not in seed.sql)
+insert into public.users (id, name, global_role, auth_user_id)
+values ('10000000-0000-4000-8000-000000000009', 'Alice Admin', 'admin', '90000000-0000-4000-8000-000000000009');
 
 update public.users set auth_user_id = '90000000-0000-4000-8000-000000000001' where id = '10000000-0000-4000-8000-000000000001';
 update public.users set auth_user_id = '90000000-0000-4000-8000-000000000003' where id = '10000000-0000-4000-8000-000000000003';
@@ -39,7 +44,7 @@ insert into public.invite_tokens (token, user_id, created_by, expires_at) values
 insert into public.invite_tokens (token, user_id, created_by) values
   ('50000000-0000-4000-8000-000000000003', '10000000-0000-4000-8000-000000000007', '10000000-0000-4000-8000-000000000001'); -- Ken, valid
 
-select plan(35);
+select plan(36);
 
 -- ---------------------------------------------------------------------------
 -- check_conflicts: pure logic (as postgres)
@@ -134,6 +139,14 @@ set local role authenticated;
 select is(
   (select public.assign_member('30000000-0000-4000-8000-000000000005', '10000000-0000-4000-8000-000000000005')->>'status'),
   'assigned', 'pastor can assign in any ministry');
+
+-- Admin passes the same gate (already_assigned proves authorization, not 42501)
+reset role;
+select set_config('request.jwt.claims', '{"sub":"90000000-0000-4000-8000-000000000009","role":"authenticated"}', true);
+set local role authenticated;
+select is(
+  (select public.assign_member('30000000-0000-4000-8000-000000000005', '10000000-0000-4000-8000-000000000005')->>'status'),
+  'already_assigned', 'admin can assign in any ministry');
 
 -- ---------------------------------------------------------------------------
 -- confirm_assignment (web) and confirm_assignment_tg (bot, service role only)

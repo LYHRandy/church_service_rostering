@@ -3,7 +3,7 @@ import { createClient } from './supabase/server';
 export interface Profile {
   id: string;
   name: string;
-  globalRole: 'none' | 'staff' | 'pastor';
+  globalRole: 'none' | 'staff' | 'pastor' | 'admin';
   memberships: {
     ministryId: string;
     ministryName: string;
@@ -39,9 +39,14 @@ export async function getProfile(): Promise<Profile | null> {
   };
 }
 
+// Pastor and admin are equivalent everywhere in the matrix.
+export function isGlobalAdmin(profile: Profile): boolean {
+  return profile.globalRole === 'pastor' || profile.globalRole === 'admin';
+}
+
 export function canManage(profile: Profile): boolean {
   return (
-    profile.globalRole === 'pastor' ||
+    isGlobalAdmin(profile) ||
     profile.memberships.some((m) => m.role === 'head' || m.role === 'ic')
   );
 }

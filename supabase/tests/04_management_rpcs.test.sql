@@ -10,7 +10,12 @@ insert into auth.users (instance_id, id, aud, role, email) values
   ('00000000-0000-0000-0000-000000000000', '90000000-0000-4000-8000-000000000003', 'authenticated', 'authenticated', 'marcus@test.local'),
   ('00000000-0000-0000-0000-000000000000', '90000000-0000-4000-8000-000000000004', 'authenticated', 'authenticated', 'lydia@test.local'),
   ('00000000-0000-0000-0000-000000000000', '90000000-0000-4000-8000-000000000005', 'authenticated', 'authenticated', 'joel@test.local'),
-  ('00000000-0000-0000-0000-000000000000', '90000000-0000-4000-8000-000000000006', 'authenticated', 'authenticated', 'priya@test.local');
+  ('00000000-0000-0000-0000-000000000000', '90000000-0000-4000-8000-000000000006', 'authenticated', 'authenticated', 'priya@test.local'),
+  ('00000000-0000-0000-0000-000000000000', '90000000-0000-4000-8000-000000000009', 'authenticated', 'authenticated', 'admin@test.local');
+
+-- Non-clergy system administrator (not in seed.sql)
+insert into public.users (id, name, global_role, auth_user_id)
+values ('10000000-0000-4000-8000-000000000009', 'Alice Admin', 'admin', '90000000-0000-4000-8000-000000000009');
 
 update public.users set auth_user_id = '90000000-0000-4000-8000-000000000001' where id = '10000000-0000-4000-8000-000000000001';
 update public.users set auth_user_id = '90000000-0000-4000-8000-000000000003' where id = '10000000-0000-4000-8000-000000000003';
@@ -18,7 +23,7 @@ update public.users set auth_user_id = '90000000-0000-4000-8000-000000000004' wh
 update public.users set auth_user_id = '90000000-0000-4000-8000-000000000005' where id = '10000000-0000-4000-8000-000000000005';
 update public.users set auth_user_id = '90000000-0000-4000-8000-000000000006' where id = '10000000-0000-4000-8000-000000000006';
 
-select plan(22);
+select plan(25);
 
 -- ---------------------------------------------------------------------------
 -- Ministries: pastor only
@@ -159,6 +164,21 @@ reset role;
 select results_eq(
   $$select count(*)::int from public.assignments where id = '40000000-0000-4000-8000-000000000002'$$,
   'select 0', 'assignment removal is persisted');
+
+-- ---------------------------------------------------------------------------
+-- Admin: pastor-equivalent global rights
+-- ---------------------------------------------------------------------------
+
+reset role;
+select set_config('request.jwt.claims', '{"sub":"90000000-0000-4000-8000-000000000009","role":"authenticated"}', true);
+set local role authenticated;
+select isnt((select public.create_ministry('Youth')), null, 'admin creates a ministry');
+select lives_ok(
+  $$select public.archive_ministry((select id from public.ministries where name = 'Youth'))$$,
+  'admin archives a ministry');
+select lives_ok(
+  $$select public.add_member('Admin Added', null, '20000000-0000-4000-8000-000000000001', 'member', '{}')$$,
+  'admin adds members to a ministry they hold no role in');
 
 select * from finish();
 rollback;

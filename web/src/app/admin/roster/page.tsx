@@ -1,4 +1,4 @@
-import { getProfile } from '@/lib/profile';
+import { getProfile, isGlobalAdmin } from '@/lib/profile';
 import { createClient } from '@/lib/supabase/server';
 import { AssignControl, CreateSlotForm, PublishButton, RemoveAssignmentButton } from './controls';
 
@@ -25,8 +25,8 @@ export default async function AdminRosterPage({
   const profile = (await getProfile())!;
   const supabase = await createClient();
 
-  const isPastor = profile.globalRole === 'pastor';
-  const manageableIds = isPastor
+  const isAdmin = isGlobalAdmin(profile);
+  const manageableIds = isAdmin
     ? null // all
     : profile.memberships.filter((m) => m.role !== 'member').map((m) => m.ministryId);
 
@@ -47,7 +47,7 @@ export default async function AdminRosterPage({
   }
 
   const canCreateSlots =
-    isPastor ||
+    isAdmin ||
     profile.memberships.some((m) => m.ministryId === ministry.id && m.role === 'head');
 
   const [{ data: slots }, { data: roster }] = await Promise.all([

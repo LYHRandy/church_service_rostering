@@ -447,7 +447,7 @@ export type Database = {
     }
     Enums: {
       assignment_status: "pending" | "confirmed" | "swap_requested" | "swapped"
-      global_role: "none" | "staff" | "pastor"
+      global_role: "none" | "staff" | "pastor" | "admin"
       ministry_role: "member" | "ic" | "head"
       ministry_status: "active" | "archived"
       notification_type: "reminder" | "published"
@@ -583,7 +583,7 @@ export const Constants = {
   public: {
     Enums: {
       assignment_status: ["pending", "confirmed", "swap_requested", "swapped"],
-      global_role: ["none", "staff", "pastor"],
+      global_role: ["none", "staff", "pastor", "admin"],
       ministry_role: ["member", "ic", "head"],
       ministry_status: ["active", "archived"],
       notification_type: ["reminder", "published"],

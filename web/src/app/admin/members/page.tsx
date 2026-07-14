@@ -1,4 +1,4 @@
-import { getProfile } from '@/lib/profile';
+import { getProfile, isGlobalAdmin } from '@/lib/profile';
 import { createClient } from '@/lib/supabase/server';
 import { AddMemberForm, CreateMinistryForm, InviteButton } from './forms';
 
@@ -12,7 +12,7 @@ export default async function MembersPage() {
     .eq('status', 'active')
     .order('name');
 
-  const isPastor = profile.globalRole === 'pastor';
+  const isAdmin = isGlobalAdmin(profile);
   const headOf = new Set(
     profile.memberships.filter((m) => m.role === 'head').map((m) => m.ministryId),
   );
@@ -21,11 +21,11 @@ export default async function MembersPage() {
     <main className="mx-auto max-w-5xl space-y-8 p-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Ministries &amp; members</h1>
-        {isPastor && <CreateMinistryForm />}
+        {isAdmin && <CreateMinistryForm />}
       </div>
 
       {(ministries ?? []).map((ministry) => {
-        const manageable = isPastor || headOf.has(ministry.id);
+        const manageable = isAdmin || headOf.has(ministry.id);
         return (
           <section key={ministry.id} className="rounded border border-gray-200 p-4 dark:border-gray-800">
             <div className="mb-3 flex items-center justify-between">

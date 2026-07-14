@@ -14,7 +14,12 @@ insert into auth.users (instance_id, id, aud, role, email) values
   ('00000000-0000-0000-0000-000000000000', '90000000-0000-4000-8000-000000000001', 'authenticated', 'authenticated', 'pastor@test.local'),
   ('00000000-0000-0000-0000-000000000000', '90000000-0000-4000-8000-000000000003', 'authenticated', 'authenticated', 'marcus@test.local'),
   ('00000000-0000-0000-0000-000000000000', '90000000-0000-4000-8000-000000000004', 'authenticated', 'authenticated', 'lydia@test.local'),
-  ('00000000-0000-0000-0000-000000000000', '90000000-0000-4000-8000-000000000005', 'authenticated', 'authenticated', 'joel@test.local');
+  ('00000000-0000-0000-0000-000000000000', '90000000-0000-4000-8000-000000000005', 'authenticated', 'authenticated', 'joel@test.local'),
+  ('00000000-0000-0000-0000-000000000000', '90000000-0000-4000-8000-000000000009', 'authenticated', 'authenticated', 'admin@test.local');
+
+-- Non-clergy system administrator (not in seed.sql)
+insert into public.users (id, name, global_role, auth_user_id)
+values ('10000000-0000-4000-8000-000000000009', 'Alice Admin', 'admin', '90000000-0000-4000-8000-000000000009');
 
 update public.users set auth_user_id = '90000000-0000-4000-8000-000000000001' where id = '10000000-0000-4000-8000-000000000001'; -- pastor
 update public.users set auth_user_id = '90000000-0000-4000-8000-000000000003' where id = '10000000-0000-4000-8000-000000000003'; -- Marcus, Worship head
@@ -34,7 +39,7 @@ values ('10000000-0000-4000-8000-000000000008', '10000000-0000-4000-8000-0000000
 insert into public.notification_queue (user_id, type)
 values ('10000000-0000-4000-8000-000000000005', 'published');
 
-select plan(24);
+select plan(26);
 
 -- ---------------------------------------------------------------------------
 -- Anonymous: no table privileges at all (denied before RLS is even consulted)
@@ -56,8 +61,8 @@ select set_config('request.jwt.claims',
   '{"sub":"90000000-0000-4000-8000-000000000005","role":"authenticated"}', true);
 set local role authenticated;
 
-select results_eq('select count(*)::int from public.users', 'select 8',
-  'member sees all user profiles (roster rendering)');
+select results_eq('select count(*)::int from public.users', 'select 9',
+  'member sees all user profiles (roster rendering, incl. test admin fixture)');
 select results_eq('select count(*)::int from public.duty_slots', 'select 4',
   'member sees only the 4 published slots, not the draft');
 select results_eq('select count(*)::int from public.assignments', 'select 5',
@@ -144,6 +149,19 @@ select throws_ok(
   $$update public.app_config set value = '999'
     where key = 'default_duty_buffer_minutes'$$,
   '42501', null, 'even pastor cannot write app_config directly');
+
+-- ---------------------------------------------------------------------------
+-- Admin (global, pastor-equivalent)
+-- ---------------------------------------------------------------------------
+reset role;
+select set_config('request.jwt.claims',
+  '{"sub":"90000000-0000-4000-8000-000000000009","role":"authenticated"}', true);
+set local role authenticated;
+
+select results_eq('select count(*)::int from public.duty_slots', 'select 5',
+  'admin sees every slot including drafts');
+select results_eq('select count(*)::int from public.invite_tokens', 'select 1',
+  'admin sees all invite tokens');
 
 select * from finish();
 rollback;
