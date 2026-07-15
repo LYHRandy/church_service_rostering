@@ -78,8 +78,20 @@ export function startWelcome(): string {
     'Welcome to the church duty roster bot! 🙌',
     '',
     'To link your account, ask your ministry head for an invite link and tap it.',
-    'Once linked you can use /duties and /roster here.',
+    'Once linked you can use /duties and /roster here, and /login to open the dashboard.',
   ].join('\n');
+}
+
+export function loginLink(): string {
+  return [
+    'Tap the button to sign in to the dashboard. 🔐',
+    '',
+    'The link is personal, works once, and expires in 1 hour — do not forward it.',
+  ].join('\n');
+}
+
+export function loginError(): string {
+  return 'Could not create a sign-in link right now. Please try again in a moment.';
 }
 
 export function notLinked(): string {

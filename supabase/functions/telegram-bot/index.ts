@@ -28,6 +28,8 @@ const bot = createBot({
   token: botToken,
   db: makeBotDb(supabase),
   tz: Deno.env.get('CHURCH_TZ') ?? 'Asia/Singapore',
+  // Where /login sign-in buttons point; local default matches `npm run dev`.
+  dashboardUrl: Deno.env.get('DASHBOARD_URL') ?? 'http://localhost:3000',
   botInfo: botInfoJson ? JSON.parse(botInfoJson) : undefined,
 });
 

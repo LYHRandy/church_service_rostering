@@ -7,6 +7,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { verifyTelegramLogin } from '../_shared/telegram-login.ts';
+import { mintLoginTokenHash } from '../_shared/login-token.ts';
 
 const botToken = Deno.env.get('TELEGRAM_BOT_TOKEN');
 if (!botToken) {
@@ -52,47 +53,12 @@ Deno.serve(async (req) => {
     return json({ error: 'verification_failed', reason: verdict.reason }, 401);
   }
 
-  const telegramId = Number(payload.id);
-  const { data: profile } = await admin
-    .from('users')
-    .select('id, name, auth_user_id')
-    .eq('telegram_id', telegramId)
-    .maybeSingle();
-  if (!profile) {
-    return json({ error: 'not_invited' }, 403);
+  const minted = await mintLoginTokenHash(admin, Number(payload.id));
+  if (!minted.ok) {
+    return minted.code === 'not_linked'
+      ? json({ error: 'not_invited' }, 403)
+      : json({ error: 'session_mint_failed' }, 500);
   }
 
-  // Synthetic address: auth requires an email but Telegram is the identity.
-  const email = `tg_${telegramId}@telegram.local`;
-
-  if (!profile.auth_user_id) {
-    const { data: created, error: createError } = await admin.auth.admin.createUser({
-      email,
-      email_confirm: true,
-      user_metadata: { telegram_id: telegramId, name: profile.name },
-    });
-    if (createError || !created.user) {
-      console.error('createUser failed:', createError?.message);
-      return json({ error: 'auth_provisioning_failed' }, 500);
-    }
-    const { error: linkError } = await admin
-      .from('users')
-      .update({ auth_user_id: created.user.id })
-      .eq('id', profile.id);
-    if (linkError) {
-      console.error('auth link failed:', linkError.message);
-      return json({ error: 'auth_provisioning_failed' }, 500);
-    }
-  }
-
-  const { data: link, error: linkGenError } = await admin.auth.admin.generateLink({
-    type: 'magiclink',
-    email,
-  });
-  if (linkGenError || !link.properties?.hashed_token) {
-    console.error('generateLink failed:', linkGenError?.message);
-    return json({ error: 'session_mint_failed' }, 500);
-  }
-
-  return json({ token_hash: link.properties.hashed_token, name: profile.name });
+  return json({ token_hash: minted.tokenHash, name: minted.name });
 });

@@ -12,6 +12,8 @@ import {
   formatRoster,
   linkError,
   linkSuccess,
+  loginError,
+  loginLink,
   notLinked,
   startWelcome,
 } from '../_shared/messages.ts';
@@ -20,9 +22,10 @@ export function createBot(opts: {
   token: string;
   db: BotDb;
   tz: string;
+  dashboardUrl: string;
   botInfo?: UserFromGetMe;
 }): Bot {
-  const { db, tz } = opts;
+  const { db, tz, dashboardUrl } = opts;
   const bot = new Bot(opts.token, opts.botInfo ? { botInfo: opts.botInfo } : undefined);
 
   bot.command('start', async (ctx) => {
@@ -49,6 +52,24 @@ export function createBot(opts: {
     if (!from) return;
     const result = await db.getRoster(from.id);
     await ctx.reply(result.linked ? formatRoster(result.entries, tz) : notLinked());
+  });
+
+  bot.command('login', async (ctx) => {
+    const from = ctx.from;
+    if (!from) return;
+    // Sign-in links are personal credentials — never post one where others
+    // could tap it before the sender does.
+    if (ctx.chat.type !== 'private') return;
+
+    const result = await db.mintLoginToken(from.id);
+    if (!result.ok) {
+      await ctx.reply(result.code === 'not_linked' ? notLinked() : loginError());
+      return;
+    }
+    const url = `${dashboardUrl}/login?token_hash=${encodeURIComponent(result.tokenHash)}`;
+    await ctx.reply(loginLink(), {
+      reply_markup: { inline_keyboard: [[{ text: '🔐 Open dashboard', url }]] },
+    });
   });
 
   bot.callbackQuery(/^confirm:(.+)$/, async (ctx) => {

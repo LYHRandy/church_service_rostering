@@ -4,6 +4,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { DutyRow, LinkErrorCode, RosterEntry } from './messages.ts';
+import { mintLoginTokenHash, type MintResult } from './login-token.ts';
 
 export interface BotDb {
   linkTelegram(
@@ -16,6 +17,7 @@ export interface BotDb {
     telegramId: number,
     assignmentId: string,
   ): Promise<{ ok: true } | { ok: false; code: string }>;
+  mintLoginToken(telegramId: number): Promise<MintResult>;
 }
 
 interface SlotRow {
@@ -128,6 +130,10 @@ export function makeBotDb(client: SupabaseClient): BotDb {
         return { ok: false, code: errorCode(error.message) };
       }
       return { ok: true };
+    },
+
+    mintLoginToken(telegramId) {
+      return mintLoginTokenHash(client, telegramId);
     },
   };
 }

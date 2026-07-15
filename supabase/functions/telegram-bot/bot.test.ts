@@ -16,15 +16,20 @@ const BOT_INFO = {
 } as UserFromGetMe;
 
 const CHAT = { id: 100, type: 'private' as const, first_name: 'Joel' };
+const GROUP_CHAT = { id: -200, type: 'group' as const, title: 'Worship Team' };
 const FROM = { id: 555, is_bot: false, first_name: 'Joel' };
 
-function commandUpdate(text: string, updateId = 1): Update {
+function commandUpdate(
+  text: string,
+  updateId = 1,
+  chat: NonNullable<Update['message']>['chat'] = CHAT,
+): Update {
   return {
     update_id: updateId,
     message: {
       message_id: updateId,
       date: 1700000000,
-      chat: CHAT,
+      chat,
       from: FROM,
       text,
       entities: [{ type: 'bot_command', offset: 0, length: text.split(' ')[0].length }],
@@ -56,6 +61,7 @@ function fakeDb(overrides: Partial<BotDb> = {}): BotDb {
     getDuties: vi.fn().mockResolvedValue({ linked: true, duties: [] }),
     getRoster: vi.fn().mockResolvedValue({ linked: true, entries: [] }),
     confirmByTelegram: vi.fn().mockResolvedValue({ ok: true }),
+    mintLoginToken: vi.fn().mockResolvedValue({ ok: true, tokenHash: 'hash-abc', name: 'Grace Ho' }),
     ...overrides,
   };
 }
@@ -63,7 +69,13 @@ function fakeDb(overrides: Partial<BotDb> = {}): BotDb {
 type ApiCall = { method: string; payload: Record<string, unknown> };
 
 function instrument(db: BotDb) {
-  const bot = createBot({ token: 'test-token', botInfo: BOT_INFO, db, tz: 'Asia/Singapore' });
+  const bot = createBot({
+    token: 'test-token',
+    botInfo: BOT_INFO,
+    db,
+    tz: 'Asia/Singapore',
+    dashboardUrl: 'https://dash.example.com',
+  });
   const calls: ApiCall[] = [];
   bot.api.config.use((_prev, method, payload) => {
     calls.push({ method, payload: payload as Record<string, unknown> });
@@ -161,6 +173,43 @@ describe('/roster', () => {
 
     const sent = calls.find((c) => c.method === 'sendMessage');
     expect(sent?.payload.text).toContain('Joel Wong');
+  });
+});
+
+describe('/login', () => {
+  it('sends a one-time dashboard sign-in button to linked members', async () => {
+    const db = fakeDb();
+    const { bot, calls } = instrument(db);
+    await bot.handleUpdate(commandUpdate('/login'));
+
+    expect(db.mintLoginToken).toHaveBeenCalledWith(555);
+    const sent = calls.find((c) => c.method === 'sendMessage');
+    const markup = sent?.payload.reply_markup as {
+      inline_keyboard: { text: string; url: string }[][];
+    };
+    expect(markup.inline_keyboard[0][0].url).toBe(
+      'https://dash.example.com/login?token_hash=hash-abc',
+    );
+  });
+
+  it('prompts unlinked users to use their invite link', async () => {
+    const db = fakeDb({
+      mintLoginToken: vi.fn().mockResolvedValue({ ok: false, code: 'not_linked' }),
+    });
+    const { bot, calls } = instrument(db);
+    await bot.handleUpdate(commandUpdate('/login'));
+
+    const sent = calls.find((c) => c.method === 'sendMessage');
+    expect(String(sent?.payload.text)).toMatch(/invite/i);
+  });
+
+  it('never posts sign-in links in group chats', async () => {
+    const db = fakeDb();
+    const { bot, calls } = instrument(db);
+    await bot.handleUpdate(commandUpdate('/login', 1, GROUP_CHAT));
+
+    expect(db.mintLoginToken).not.toHaveBeenCalled();
+    expect(calls.find((c) => c.method === 'sendMessage')).toBeUndefined();
   });
 });
 
