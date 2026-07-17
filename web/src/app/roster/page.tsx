@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import { Button, EmptyState, inputClass } from '@/components/ui';
 
 // Full-year published roster — readable by every signed-in member (SPEC §3.8).
 // Draft slots are excluded here by query; RLS additionally hides them from
@@ -71,15 +72,20 @@ export default async function RosterPage({
     <main className="mx-auto max-w-5xl p-4">
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <h1 className="text-xl font-semibold">Roster {year}</h1>
-        <form method="get" className="flex flex-wrap items-center gap-2 text-sm">
-          <select name="year" defaultValue={String(year)} className="rounded border border-gray-300 px-2 py-1 dark:border-gray-700 dark:bg-gray-900">
+        <form method="get" className="flex w-full flex-wrap items-center gap-2 text-sm sm:w-auto">
+          <select name="year" defaultValue={String(year)} aria-label="Year" className={inputClass}>
             {[year - 1, year, year + 1].map((y) => (
               <option key={y} value={y}>
                 {y}
               </option>
             ))}
           </select>
-          <select name="ministry" defaultValue={params.ministry ?? ''} className="rounded border border-gray-300 px-2 py-1 dark:border-gray-700 dark:bg-gray-900">
+          <select
+            name="ministry"
+            defaultValue={params.ministry ?? ''}
+            aria-label="Filter by ministry"
+            className={inputClass}
+          >
             <option value="">All ministries</option>
             {(ministries ?? []).map((m) => (
               <option key={m.id} value={m.id}>
@@ -87,7 +93,12 @@ export default async function RosterPage({
               </option>
             ))}
           </select>
-          <select name="member" defaultValue={params.member ?? ''} className="rounded border border-gray-300 px-2 py-1 dark:border-gray-700 dark:bg-gray-900">
+          <select
+            name="member"
+            defaultValue={params.member ?? ''}
+            aria-label="Filter by member"
+            className={inputClass}
+          >
             <option value="">All members</option>
             {(members ?? []).map((u) => (
               <option key={u.id} value={u.id}>
@@ -95,51 +106,54 @@ export default async function RosterPage({
               </option>
             ))}
           </select>
-          <button type="submit" className="rounded bg-gray-900 px-3 py-1 text-white dark:bg-gray-100 dark:text-gray-900">
-            Filter
-          </button>
+          <Button type="submit">Filter</Button>
         </form>
       </div>
 
       {byDate.size === 0 && (
-        <p className="text-gray-500">No published duties match these filters.</p>
+        <EmptyState
+          title="No published duties match these filters."
+          hint="Try a different year or ministry, or clear the member filter."
+        />
       )}
 
       <div className="space-y-6">
         {[...byDate.entries()].map(([date, dateSlots]) => (
           <section key={date}>
-            <h2 className="mb-2 border-b border-gray-200 pb-1 font-medium dark:border-gray-800">
-              {DATE_FMT.format(new Date(`${date}T00:00:00Z`))} · {date}
+            <h2 className="mb-1 border-b border-gray-200 pb-1 font-medium dark:border-gray-800">
+              {DATE_FMT.format(new Date(`${date}T00:00:00Z`))}
+              <span className="ml-2 text-sm font-normal text-gray-400">{date}</span>
             </h2>
-            <table className="w-full text-sm">
-              <tbody>
-                {dateSlots.map((slot) => (
-                  <tr key={slot.id} className="border-b border-gray-100 dark:border-gray-900">
-                    <td className="w-40 py-1.5 text-gray-500">
-                      {TIME_FMT.format(new Date(slot.start_at))}
-                      {slot.end_at ? `–${TIME_FMT.format(new Date(slot.end_at))}` : ''}
-                    </td>
-                    <td className="w-40 py-1.5">{slot.ministries?.name}</td>
-                    <td className="w-40 py-1.5 font-medium">{slot.position}</td>
-                    <td className="py-1.5">
-                      {slot.assignments.length === 0 && (
-                        <span className="text-gray-400">unfilled</span>
-                      )}
-                      {slot.assignments.map((a, i) => (
-                        <span key={a.id}>
-                          {i > 0 && ', '}
-                          {a.users?.name}
-                          {a.conflict_acknowledged && (
-                            <span title="Assigned despite a schedule conflict"> ⚠️</span>
-                          )}
-                          {a.status === 'confirmed' ? ' ✅' : ''}
-                        </span>
-                      ))}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <ul className="divide-y divide-gray-100 dark:divide-gray-900">
+              {dateSlots.map((slot) => (
+                <li
+                  key={slot.id}
+                  className="flex flex-wrap items-baseline gap-x-4 gap-y-0.5 py-2 text-sm"
+                >
+                  <span className="w-24 shrink-0 tabular-nums text-gray-500">
+                    {TIME_FMT.format(new Date(slot.start_at))}
+                    {slot.end_at ? `–${TIME_FMT.format(new Date(slot.end_at))}` : ''}
+                  </span>
+                  <span className="w-36 shrink-0 truncate">{slot.ministries?.name}</span>
+                  <span className="w-32 shrink-0 truncate font-medium">{slot.position}</span>
+                  <span className="min-w-0 basis-full pl-24 sm:basis-0 sm:flex-1 sm:pl-0">
+                    {slot.assignments.length === 0 && (
+                      <span className="text-gray-400">unfilled</span>
+                    )}
+                    {slot.assignments.map((a, i) => (
+                      <span key={a.id}>
+                        {i > 0 && ', '}
+                        {a.users?.name}
+                        {a.conflict_acknowledged && (
+                          <span title="Assigned despite a schedule conflict"> ⚠️</span>
+                        )}
+                        {a.status === 'confirmed' ? ' ✅' : ''}
+                      </span>
+                    ))}
+                  </span>
+                </li>
+              ))}
+            </ul>
           </section>
         ))}
       </div>

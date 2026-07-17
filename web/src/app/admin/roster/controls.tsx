@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { Button, Field, inputClass } from '@/components/ui';
 
 interface Conflict {
   ministry_name: string;
@@ -72,8 +73,8 @@ export function AssignControl({
   }
 
   return (
-    <div className="text-sm">
-      <div className="flex items-center gap-1">
+    <div className="w-full text-sm sm:w-auto">
+      <div className="flex w-full items-center gap-2">
         <select
           value={selected}
           onChange={(e) => {
@@ -81,7 +82,8 @@ export function AssignControl({
             setConflicts(null);
             setError(null);
           }}
-          className="rounded border border-gray-300 px-1.5 py-1 dark:border-gray-700 dark:bg-gray-900"
+          aria-label="Member to assign"
+          className={`${inputClass} flex-1 sm:flex-none`}
         >
           <option value="">Select member…</option>
           {members.map((m) => (
@@ -90,17 +92,16 @@ export function AssignControl({
             </option>
           ))}
         </select>
-        <button
-          onClick={() => assign(false)}
-          disabled={!selected || busy}
-          className="rounded bg-gray-900 px-2 py-1 text-white disabled:opacity-40 dark:bg-gray-100 dark:text-gray-900"
-        >
+        <Button onClick={() => assign(false)} disabled={!selected || busy}>
           Assign
-        </button>
+        </Button>
       </div>
 
       {conflicts && (
-        <div className="mt-2 max-w-xs rounded border border-red-300 bg-red-50 p-2 text-xs dark:border-red-800 dark:bg-red-950">
+        <div
+          role="alert"
+          className="mt-2 max-w-sm rounded-md border border-red-300 bg-red-50 p-3 text-xs dark:border-red-800 dark:bg-red-950"
+        >
           <p className="font-medium text-red-800 dark:text-red-200">
             ⚠️ Schedule conflict — assignment blocked:
           </p>
@@ -111,24 +112,21 @@ export function AssignControl({
               </li>
             ))}
           </ul>
-          <div className="mt-2 flex gap-2">
-            <button
-              onClick={() => assign(true)}
-              disabled={busy}
-              className="rounded bg-red-700 px-2 py-1 text-white"
-            >
+          <div className="mt-2 flex flex-wrap gap-2">
+            <Button variant="danger" onClick={() => assign(true)} disabled={busy}>
               Allow conflict anyway
-            </button>
-            <button
-              onClick={() => setConflicts(null)}
-              className="rounded border border-gray-300 px-2 py-1 dark:border-gray-700"
-            >
+            </Button>
+            <Button variant="secondary" onClick={() => setConflicts(null)}>
               Cancel
-            </button>
+            </Button>
           </div>
         </div>
       )}
-      {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
+      {error && (
+        <p role="alert" className="mt-1 text-xs text-red-600">
+          {error}
+        </p>
+      )}
     </div>
   );
 }
@@ -153,12 +151,17 @@ export function RemoveAssignmentButton({ assignmentId }: { assignmentId: string 
     <>
       <button
         onClick={remove}
+        aria-label="Remove assignment"
         title="Remove assignment"
-        className="text-gray-400 hover:text-red-600"
+        className="rounded-md px-1.5 py-0.5 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950"
       >
         ✕
       </button>
-      {error && <span className="text-xs text-red-600">{error}</span>}
+      {error && (
+        <span role="alert" className="text-xs text-red-600">
+          {error}
+        </span>
+      )}
     </>
   );
 }
@@ -195,61 +198,60 @@ export function CreateSlotForm({ ministryId }: { ministryId: string }) {
   return (
     <form
       onSubmit={submit}
-      className="flex flex-wrap items-end gap-2 rounded border border-gray-200 p-3 text-sm dark:border-gray-800"
+      className="grid grid-cols-2 items-end gap-3 rounded-lg border border-gray-200 p-3 text-sm sm:flex sm:flex-wrap dark:border-gray-800"
     >
-      <label className="flex flex-col gap-1">
-        <span className="text-xs text-gray-500">Service date</span>
+      <Field label="Service date">
         <input
           type="date"
           value={date}
           onChange={(e) => setDate(e.target.value)}
           required
-          className="rounded border border-gray-300 px-2 py-1 dark:border-gray-700 dark:bg-gray-900"
+          className={inputClass}
         />
-      </label>
-      <label className="flex flex-col gap-1">
-        <span className="text-xs text-gray-500">Start</span>
+      </Field>
+      <Field label="Start">
         <input
           type="time"
           value={start}
           onChange={(e) => setStart(e.target.value)}
           required
-          className="rounded border border-gray-300 px-2 py-1 dark:border-gray-700 dark:bg-gray-900"
+          className={inputClass}
         />
-      </label>
-      <label className="flex flex-col gap-1">
-        <span className="text-xs text-gray-500">End (blank = 2h buffer)</span>
+      </Field>
+      <Field label="End (blank = 2h buffer)">
         <input
           type="time"
           value={end}
           onChange={(e) => setEnd(e.target.value)}
-          className="rounded border border-gray-300 px-2 py-1 dark:border-gray-700 dark:bg-gray-900"
+          className={inputClass}
         />
-      </label>
-      <label className="flex flex-col gap-1">
-        <span className="text-xs text-gray-500">Position</span>
+      </Field>
+      <Field label="Position">
         <input
           value={position}
           onChange={(e) => setPosition(e.target.value)}
           placeholder="e.g. vocals"
           required
-          className="rounded border border-gray-300 px-2 py-1 dark:border-gray-700 dark:bg-gray-900"
+          className={inputClass}
         />
-      </label>
-      <label className="flex flex-col gap-1">
-        <span className="text-xs text-gray-500">Headcount</span>
+      </Field>
+      <Field label="Headcount">
         <input
           type="number"
           min={1}
           value={headcount}
           onChange={(e) => setHeadcount(Number(e.target.value))}
-          className="w-20 rounded border border-gray-300 px-2 py-1 dark:border-gray-700 dark:bg-gray-900"
+          className={`${inputClass} sm:w-20`}
         />
-      </label>
-      <button type="submit" className="rounded bg-gray-900 px-3 py-1.5 text-white dark:bg-gray-100 dark:text-gray-900">
+      </Field>
+      <Button type="submit" className="col-span-2 sm:col-span-1">
         Add slot
-      </button>
-      {error && <span className="text-red-600">{error}</span>}
+      </Button>
+      {error && (
+        <span role="alert" className="col-span-2 text-red-600">
+          {error}
+        </span>
+      )}
     </form>
   );
 }
@@ -291,14 +293,14 @@ export function PublishButton({
 
   return (
     <div className="text-sm">
-      <button
-        onClick={publish}
-        disabled={busy}
-        className="rounded bg-green-700 px-3 py-1.5 text-white disabled:opacity-40"
-      >
+      <Button variant="success" onClick={publish} disabled={busy}>
         Publish {draftCount} draft slot{draftCount === 1 ? '' : 's'} &amp; notify
-      </button>
-      {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
+      </Button>
+      {error && (
+        <p role="alert" className="mt-1 text-xs text-red-600">
+          {error}
+        </p>
+      )}
     </div>
   );
 }

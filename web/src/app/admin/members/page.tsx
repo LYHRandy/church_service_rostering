@@ -1,5 +1,6 @@
 import { getProfile, isGlobalAdmin } from '@/lib/profile';
 import { createClient } from '@/lib/supabase/server';
+import { Badge, EmptyState } from '@/components/ui';
 import { AddMemberForm, CreateMinistryForm, InviteButton } from './forms';
 
 export default async function MembersPage() {
@@ -19,46 +20,54 @@ export default async function MembersPage() {
 
   return (
     <main className="mx-auto max-w-5xl space-y-8 p-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-xl font-semibold">Ministries &amp; members</h1>
         {isAdmin && <CreateMinistryForm />}
       </div>
 
+      {(ministries ?? []).length === 0 && (
+        <EmptyState
+          title="No ministries yet."
+          hint={isAdmin ? 'Create the first ministry above.' : undefined}
+        />
+      )}
+
       {(ministries ?? []).map((ministry) => {
         const manageable = isAdmin || headOf.has(ministry.id);
         return (
-          <section key={ministry.id} className="rounded border border-gray-200 p-4 dark:border-gray-800">
-            <div className="mb-3 flex items-center justify-between">
-              <h2 className="font-medium">{ministry.name}</h2>
-            </div>
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-gray-500">
-                  <th className="py-1 font-normal">Name</th>
-                  <th className="py-1 font-normal">Role</th>
-                  <th className="py-1 font-normal">Positions</th>
-                  <th className="py-1 font-normal">Telegram</th>
-                  {manageable && <th className="py-1 font-normal">Invite</th>}
-                </tr>
-              </thead>
-              <tbody>
-                {ministry.memberships.map((m) =>
-                  m.users ? (
-                    <tr key={m.users.id} className="border-t border-gray-100 dark:border-gray-900">
-                      <td className="py-1.5">{m.users.name}</td>
-                      <td className="py-1.5 uppercase text-gray-500">{m.role}</td>
-                      <td className="py-1.5">{(m.positions ?? []).join(', ')}</td>
-                      <td className="py-1.5">{m.users.telegram_id ? '✅ linked' : '— not linked'}</td>
-                      {manageable && (
-                        <td className="py-1.5">
-                          {!m.users.telegram_id && <InviteButton userId={m.users.id} />}
-                        </td>
-                      )}
-                    </tr>
-                  ) : null,
-                )}
-              </tbody>
-            </table>
+          <section
+            key={ministry.id}
+            className="rounded-lg border border-gray-200 p-4 dark:border-gray-800"
+          >
+            <h2 className="mb-3 font-medium">{ministry.name}</h2>
+
+            {ministry.memberships.length === 0 && (
+              <p className="py-2 text-sm text-gray-400">No members yet.</p>
+            )}
+
+            <ul className="divide-y divide-gray-100 dark:divide-gray-900">
+              {ministry.memberships.map((m) =>
+                m.users ? (
+                  <li
+                    key={m.users.id}
+                    className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2 text-sm"
+                  >
+                    <span className="w-full font-medium sm:w-44 sm:truncate">{m.users.name}</span>
+                    <Badge tone={m.role === 'member' ? 'neutral' : 'published'}>{m.role}</Badge>
+                    <span className="min-w-0 flex-1 truncate text-gray-500">
+                      {(m.positions ?? []).join(', ')}
+                    </span>
+                    <span className="shrink-0 text-gray-500">
+                      {m.users.telegram_id ? '✅ linked' : '— not linked'}
+                    </span>
+                    {manageable && !m.users.telegram_id && (
+                      <InviteButton userId={m.users.id} />
+                    )}
+                  </li>
+                ) : null,
+              )}
+            </ul>
+
             {manageable && <AddMemberForm ministryId={ministry.id} />}
           </section>
         );

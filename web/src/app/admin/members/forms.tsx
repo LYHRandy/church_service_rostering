@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { Button, Field, inputClass } from '@/components/ui';
 
 export function CreateMinistryForm() {
   const router = useRouter();
@@ -23,18 +24,21 @@ export function CreateMinistryForm() {
   }
 
   return (
-    <form onSubmit={submit} className="flex items-center gap-2 text-sm">
+    <form onSubmit={submit} className="flex w-full items-center gap-2 text-sm sm:w-auto">
       <input
         value={name}
         onChange={(e) => setName(e.target.value)}
         placeholder="New ministry name"
+        aria-label="New ministry name"
         required
-        className="rounded border border-gray-300 px-2 py-1 dark:border-gray-700 dark:bg-gray-900"
+        className={`${inputClass} flex-1 sm:flex-none`}
       />
-      <button type="submit" className="rounded bg-gray-900 px-3 py-1 text-white dark:bg-gray-100 dark:text-gray-900">
-        Create
-      </button>
-      {error && <span className="text-red-600">{error}</span>}
+      <Button type="submit">Create</Button>
+      {error && (
+        <span role="alert" className="text-red-600">
+          {error}
+        </span>
+      )}
     </form>
   );
 }
@@ -72,39 +76,52 @@ export function AddMemberForm({ ministryId }: { ministryId: string }) {
   }
 
   return (
-    <form onSubmit={submit} className="mt-3 flex flex-wrap items-center gap-2 border-t border-gray-100 pt-3 text-sm dark:border-gray-900">
-      <input
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        placeholder="Full name"
-        required
-        className="rounded border border-gray-300 px-2 py-1 dark:border-gray-700 dark:bg-gray-900"
-      />
-      <input
-        value={phone}
-        onChange={(e) => setPhone(e.target.value)}
-        placeholder="Phone (optional)"
-        className="w-36 rounded border border-gray-300 px-2 py-1 dark:border-gray-700 dark:bg-gray-900"
-      />
-      <select
-        value={role}
-        onChange={(e) => setRole(e.target.value as 'member' | 'ic' | 'head')}
-        className="rounded border border-gray-300 px-2 py-1 dark:border-gray-700 dark:bg-gray-900"
-      >
-        <option value="member">Member</option>
-        <option value="ic">IC</option>
-        <option value="head">Head</option>
-      </select>
-      <input
-        value={positions}
-        onChange={(e) => setPositions(e.target.value)}
-        placeholder="Positions (comma-separated)"
-        className="w-56 rounded border border-gray-300 px-2 py-1 dark:border-gray-700 dark:bg-gray-900"
-      />
-      <button type="submit" className="rounded bg-gray-900 px-3 py-1 text-white dark:bg-gray-100 dark:text-gray-900">
+    <form
+      onSubmit={submit}
+      className="mt-3 grid grid-cols-2 items-end gap-3 border-t border-gray-100 pt-3 text-sm sm:flex sm:flex-wrap dark:border-gray-900"
+    >
+      <Field label="Full name">
+        <input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          required
+          className={inputClass}
+        />
+      </Field>
+      <Field label="Phone (optional)">
+        <input
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+          className={`${inputClass} sm:w-36`}
+        />
+      </Field>
+      <Field label="Role">
+        <select
+          value={role}
+          onChange={(e) => setRole(e.target.value as 'member' | 'ic' | 'head')}
+          className={inputClass}
+        >
+          <option value="member">Member</option>
+          <option value="ic">IC</option>
+          <option value="head">Head</option>
+        </select>
+      </Field>
+      <Field label="Positions (comma-separated)">
+        <input
+          value={positions}
+          onChange={(e) => setPositions(e.target.value)}
+          placeholder="e.g. vocals, sound"
+          className={`${inputClass} sm:w-56`}
+        />
+      </Field>
+      <Button type="submit" className="col-span-2 sm:col-span-1">
         Add member
-      </button>
-      {error && <span className="text-red-600">{error}</span>}
+      </Button>
+      {error && (
+        <span role="alert" className="col-span-2 text-red-600">
+          {error}
+        </span>
+      )}
     </form>
   );
 }
@@ -141,11 +158,18 @@ export function InviteButton({ userId }: { userId: string }) {
     );
   }
   return (
-    <span>
-      <button onClick={generate} className="text-blue-600 hover:underline dark:text-blue-400">
+    <span className="flex items-center gap-2">
+      <button
+        onClick={generate}
+        className="rounded-md px-1 py-0.5 text-blue-600 hover:underline dark:text-blue-400"
+      >
         Generate invite
       </button>
-      {error && <span className="ml-2 text-red-600">{error}</span>}
+      {error && (
+        <span role="alert" className="text-xs text-red-600">
+          {error}
+        </span>
+      )}
     </span>
   );
 }

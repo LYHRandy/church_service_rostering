@@ -1,5 +1,6 @@
 import { getProfile, isGlobalAdmin } from '@/lib/profile';
 import { createClient } from '@/lib/supabase/server';
+import { Badge, Button, EmptyState, inputClass } from '@/components/ui';
 import { AssignControl, CreateSlotForm, PublishButton, RemoveAssignmentButton } from './controls';
 
 // Slot creation (heads/pastor, T13) + assignment with live conflict blocking
@@ -14,6 +15,13 @@ const TIME_FMT = new Intl.DateTimeFormat('en-GB', {
   minute: '2-digit',
   hour12: false,
   timeZone: 'Asia/Singapore',
+});
+
+const DATE_FMT = new Intl.DateTimeFormat('en-GB', {
+  weekday: 'short',
+  day: 'numeric',
+  month: 'short',
+  timeZone: 'UTC',
 });
 
 export default async function AdminRosterPage({
@@ -41,7 +49,7 @@ export default async function AdminRosterPage({
   if (!ministry) {
     return (
       <main className="mx-auto max-w-5xl p-4">
-        <p className="text-gray-500">You do not manage any ministries.</p>
+        <EmptyState title="You do not manage any ministries." />
       </main>
     );
   }
@@ -76,23 +84,21 @@ export default async function AdminRosterPage({
     <main className="mx-auto max-w-5xl space-y-6 p-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-xl font-semibold">Manage roster — {ministry.name}</h1>
-        <div className="flex items-center gap-3">
-          <form method="get" className="text-sm">
-            <select
-              name="ministry"
-              defaultValue={ministry.id}
-              className="rounded border border-gray-300 px-2 py-1 dark:border-gray-700 dark:bg-gray-900"
-            >
-              {(ministries ?? []).map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.name}
-                </option>
-              ))}
-            </select>
-            <button type="submit" className="ml-2 rounded border border-gray-300 px-2 py-1 dark:border-gray-700">
-              Switch
-            </button>
-          </form>
+        <div className="flex flex-wrap items-center gap-3">
+          {(ministries ?? []).length > 1 && (
+            <form method="get" className="flex items-center gap-2 text-sm">
+              <select name="ministry" defaultValue={ministry.id} aria-label="Ministry" className={inputClass}>
+                {(ministries ?? []).map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.name}
+                  </option>
+                ))}
+              </select>
+              <Button type="submit" variant="secondary">
+                Switch
+              </Button>
+            </form>
+          )}
           {draftDates.length > 0 && (
             <PublishButton
               ministryId={ministry.id}
@@ -106,43 +112,41 @@ export default async function AdminRosterPage({
 
       {canCreateSlots && <CreateSlotForm ministryId={ministry.id} />}
 
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="text-left text-gray-500">
-            <th className="py-1 font-normal">Date</th>
-            <th className="py-1 font-normal">Time</th>
-            <th className="py-1 font-normal">Position</th>
-            <th className="py-1 font-normal">Status</th>
-            <th className="py-1 font-normal">Assigned</th>
-            <th className="py-1 font-normal">Assign</th>
-          </tr>
-        </thead>
-        <tbody>
-          {(slots ?? []).map((slot) => (
-            <tr key={slot.id} className="border-t border-gray-100 align-top dark:border-gray-900">
-              <td className="py-2">{slot.service_date}</td>
-              <td className="py-2 text-gray-500">
+      {(slots ?? []).length === 0 && (
+        <EmptyState
+          title="No upcoming duty slots."
+          hint={canCreateSlots ? 'Add the first slot above.' : 'The ministry head creates slots here.'}
+        />
+      )}
+
+      <ul className="space-y-3">
+        {(slots ?? []).map((slot) => (
+          <li
+            key={slot.id}
+            className="rounded-lg border border-gray-200 p-3 dark:border-gray-800"
+          >
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+              <span className="font-medium">
+                {DATE_FMT.format(new Date(`${slot.service_date}T00:00:00Z`))}
+              </span>
+              <span className="tabular-nums text-gray-500">
                 {TIME_FMT.format(new Date(slot.start_at))}
                 {slot.end_at ? `–${TIME_FMT.format(new Date(slot.end_at))}` : ' (2h buffer)'}
-              </td>
-              <td className="py-2 font-medium">{slot.position}</td>
-              <td className="py-2">
-                {slot.status === 'draft' ? (
-                  <span className="rounded bg-yellow-100 px-1.5 py-0.5 text-xs text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
-                    draft
-                  </span>
-                ) : (
-                  <span className="rounded bg-green-100 px-1.5 py-0.5 text-xs text-green-800 dark:bg-green-900 dark:text-green-200">
-                    published
-                  </span>
+              </span>
+              <span className="font-medium">{slot.position}</span>
+              <Badge tone={slot.status === 'draft' ? 'draft' : 'published'}>{slot.status}</Badge>
+              <span className="text-xs text-gray-400">
+                {slot.assignments.length}/{slot.headcount} filled
+              </span>
+            </div>
+
+            <div className="mt-3 flex flex-wrap items-start justify-between gap-x-6 gap-y-2">
+              <div className="space-y-1 text-sm">
+                {slot.assignments.length === 0 && (
+                  <span className="text-gray-400">No one assigned yet</span>
                 )}
-                <div className="mt-1 text-xs text-gray-400">
-                  {slot.assignments.length}/{slot.headcount} filled
-                </div>
-              </td>
-              <td className="py-2">
                 {slot.assignments.map((a) => (
-                  <div key={a.id} className="flex items-center gap-1">
+                  <div key={a.id} className="flex items-center gap-1.5">
                     <span>
                       {a.users?.name}
                       {a.conflict_acknowledged && <span title="Conflict override"> ⚠️</span>}
@@ -151,19 +155,17 @@ export default async function AdminRosterPage({
                     <RemoveAssignmentButton assignmentId={a.id} />
                   </div>
                 ))}
-              </td>
-              <td className="py-2">
-                <AssignControl
-                  slotId={slot.id}
-                  members={members.filter(
-                    (m) => !slot.assignments.some((a) => a.users?.id === m.id),
-                  )}
-                />
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+              </div>
+              <AssignControl
+                slotId={slot.id}
+                members={members.filter(
+                  (m) => !slot.assignments.some((a) => a.users?.id === m.id),
+                )}
+              />
+            </div>
+          </li>
+        ))}
+      </ul>
     </main>
   );
 }
