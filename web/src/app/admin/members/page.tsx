@@ -1,6 +1,16 @@
 import { getProfile, isGlobalAdmin } from '@/lib/profile';
 import { createClient } from '@/lib/supabase/server';
-import { Badge, EmptyState } from '@/components/ui';
+import {
+  Badge,
+  Card,
+  EmptyState,
+  PageHeader,
+  tableClass,
+  tbodyClass,
+  tdClass,
+  thClass,
+  theadClass,
+} from '@/components/ui';
 import { AddMemberForm, CreateMinistryForm, InviteButton } from './forms';
 
 export default async function MembersPage() {
@@ -19,11 +29,10 @@ export default async function MembersPage() {
   );
 
   return (
-    <main className="mx-auto max-w-5xl space-y-8 p-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-xl font-semibold">Ministries &amp; members</h1>
+    <main className="mx-auto max-w-6xl space-y-6 p-4 sm:p-6">
+      <PageHeader title="Ministries & members">
         {isAdmin && <CreateMinistryForm />}
-      </div>
+      </PageHeader>
 
       {(ministries ?? []).length === 0 && (
         <EmptyState
@@ -35,41 +44,77 @@ export default async function MembersPage() {
       {(ministries ?? []).map((ministry) => {
         const manageable = isAdmin || headOf.has(ministry.id);
         return (
-          <section
-            key={ministry.id}
-            className="rounded-lg border border-gray-200 p-4 dark:border-gray-800"
-          >
-            <h2 className="mb-3 font-medium">{ministry.name}</h2>
+          <Card key={ministry.id}>
+            <div className="border-b border-gray-100 px-4 py-3 dark:border-gray-800">
+              <h2 className="font-semibold">{ministry.name}</h2>
+            </div>
 
-            {ministry.memberships.length === 0 && (
-              <p className="py-2 text-sm text-gray-400">No members yet.</p>
+            {ministry.memberships.length === 0 ? (
+              <p className="px-4 py-4 text-sm text-gray-400">No members yet.</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className={tableClass}>
+                  <thead className={theadClass}>
+                    <tr>
+                      <th scope="col" className={thClass}>
+                        Name
+                      </th>
+                      <th scope="col" className={thClass}>
+                        Role
+                      </th>
+                      <th scope="col" className={thClass}>
+                        Positions
+                      </th>
+                      <th scope="col" className={thClass}>
+                        Telegram
+                      </th>
+                      {manageable && (
+                        <th scope="col" className={thClass}>
+                          Invite
+                        </th>
+                      )}
+                    </tr>
+                  </thead>
+                  <tbody className={tbodyClass}>
+                    {ministry.memberships.map((m) =>
+                      m.users ? (
+                        <tr
+                          key={m.users.id}
+                          className="hover:bg-gray-50 dark:hover:bg-gray-800/40"
+                        >
+                          <td className={`${tdClass} whitespace-nowrap font-medium`}>
+                            {m.users.name}
+                          </td>
+                          <td className={`${tdClass} whitespace-nowrap`}>
+                            <Badge tone={m.role === 'member' ? 'neutral' : 'published'}>
+                              {m.role}
+                            </Badge>
+                          </td>
+                          <td className={`${tdClass} text-gray-500`}>
+                            {(m.positions ?? []).join(', ') || '—'}
+                          </td>
+                          <td className={`${tdClass} whitespace-nowrap text-gray-500`}>
+                            {m.users.telegram_id ? '✅ linked' : '— not linked'}
+                          </td>
+                          {manageable && (
+                            <td className={`${tdClass} whitespace-nowrap`}>
+                              {!m.users.telegram_id && <InviteButton userId={m.users.id} />}
+                            </td>
+                          )}
+                        </tr>
+                      ) : null,
+                    )}
+                  </tbody>
+                </table>
+              </div>
             )}
 
-            <ul className="divide-y divide-gray-100 dark:divide-gray-900">
-              {ministry.memberships.map((m) =>
-                m.users ? (
-                  <li
-                    key={m.users.id}
-                    className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2 text-sm"
-                  >
-                    <span className="w-full font-medium sm:w-44 sm:truncate">{m.users.name}</span>
-                    <Badge tone={m.role === 'member' ? 'neutral' : 'published'}>{m.role}</Badge>
-                    <span className="min-w-0 flex-1 truncate text-gray-500">
-                      {(m.positions ?? []).join(', ')}
-                    </span>
-                    <span className="shrink-0 text-gray-500">
-                      {m.users.telegram_id ? '✅ linked' : '— not linked'}
-                    </span>
-                    {manageable && !m.users.telegram_id && (
-                      <InviteButton userId={m.users.id} />
-                    )}
-                  </li>
-                ) : null,
-              )}
-            </ul>
-
-            {manageable && <AddMemberForm ministryId={ministry.id} />}
-          </section>
+            {manageable && (
+              <div className="border-t border-gray-100 px-4 py-3 dark:border-gray-800">
+                <AddMemberForm ministryId={ministry.id} />
+              </div>
+            )}
+          </Card>
         );
       })}
     </main>

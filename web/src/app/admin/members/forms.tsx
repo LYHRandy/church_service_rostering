@@ -78,7 +78,7 @@ export function AddMemberForm({ ministryId }: { ministryId: string }) {
   return (
     <form
       onSubmit={submit}
-      className="mt-3 grid grid-cols-2 items-end gap-3 border-t border-gray-100 pt-3 text-sm sm:flex sm:flex-wrap dark:border-gray-900"
+      className="grid grid-cols-2 items-end gap-3 text-sm sm:flex sm:flex-wrap"
     >
       <Field label="Full name">
         <input

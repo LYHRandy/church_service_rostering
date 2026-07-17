@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { Button, Field, inputClass } from '@/components/ui';
+import { Button, Card, Field, inputClass } from '@/components/ui';
 
 interface Conflict {
   ministry_name: string;
@@ -196,10 +196,12 @@ export function CreateSlotForm({ ministryId }: { ministryId: string }) {
   }
 
   return (
-    <form
-      onSubmit={submit}
-      className="grid grid-cols-2 items-end gap-3 rounded-lg border border-gray-200 p-3 text-sm sm:flex sm:flex-wrap dark:border-gray-800"
-    >
+    <Card className="p-4">
+      <h2 className="mb-3 text-sm font-semibold">Add duty slot</h2>
+      <form
+        onSubmit={submit}
+        className="grid grid-cols-2 items-end gap-3 text-sm sm:flex sm:flex-wrap"
+      >
       <Field label="Service date">
         <input
           type="date"
@@ -244,15 +246,16 @@ export function CreateSlotForm({ ministryId }: { ministryId: string }) {
           className={`${inputClass} sm:w-20`}
         />
       </Field>
-      <Button type="submit" className="col-span-2 sm:col-span-1">
-        Add slot
-      </Button>
-      {error && (
-        <span role="alert" className="col-span-2 text-red-600">
-          {error}
-        </span>
-      )}
-    </form>
+        <Button type="submit" className="col-span-2 sm:col-span-1">
+          Add slot
+        </Button>
+        {error && (
+          <span role="alert" className="col-span-2 text-red-600">
+            {error}
+          </span>
+        )}
+      </form>
+    </Card>
   );
 }
 
